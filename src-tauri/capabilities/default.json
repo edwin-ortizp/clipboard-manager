@@ -1,0 +1,1 @@
+{ "identifier": "desktop", "windows": ["manager", "widget"], "permissions": ["core:default"] }

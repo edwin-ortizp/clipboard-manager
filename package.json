@@ -1,0 +1,35 @@
+{
+  "name": "clipboard-manager",
+  "private": true,
+  "version": "0.2.2",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "svelte-check --tsconfig ./tsconfig.json && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "tauri": "tauri",
+    "native:check": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/native.ps1 check",
+    "native:test": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/native.ps1 test",
+    "desktop:dev": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/native.ps1 dev",
+    "desktop:build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/native.ps1 build",
+    "test:ui": "playwright test",
+    "format": "prettier --write src tests *.json *.ts README.md",
+    "release:prepare": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release.ps1",
+    "pretest:ui": "npm run build"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "diff": "^9.0.0",
+    "svelte": "^5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@sveltejs/vite-plugin-svelte": "^6",
+    "@tauri-apps/cli": "^2",
+    "prettier": "^3.9.10",
+    "prettier-plugin-svelte": "^4.1.1",
+    "svelte-check": "^4",
+    "typescript": "^5",
+    "vite": "^7"
+  }
+}
