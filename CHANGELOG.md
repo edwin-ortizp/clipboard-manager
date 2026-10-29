@@ -1,3 +1,14 @@
+# Clipboard Manager 0.2.4
+
+- Botón para cerrar el widget manteniendo activa la aplicación.
+- Mensajes precisos para fallos del canal de actualizaciones y recuperación al reintentar.
+
+# Clipboard Manager 0.2.3
+
+- Nombre visible, ejecutable y accesos directos actualizados a Clipboard Manager.
+- Instalador compatible con la instalación anterior, conservando datos e inicio automático.
+- Canal de actualizaciones corregido al repositorio clipboard-manager.
+
 # Clipia 0.2.2
 
 - Diccionario TSV externo configurable, con selector de archivo y validación por línea.

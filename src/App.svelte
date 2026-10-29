@@ -106,12 +106,15 @@
   let updateProgress = $state(0);
   async function checkUpdates() {
     updateBusy = true;
+    availableUpdate = null;
     updateStatus = 'Buscando actualizaciones…';
     try {
       availableUpdate = await invoke('check_update');
       updateStatus = availableUpdate
         ? `Versión ${availableUpdate.version} disponible`
         : 'Tienes la última versión';
+    } catch (error) {
+      updateStatus = String(error);
     } finally {
       updateBusy = false;
     }
@@ -422,7 +425,10 @@
   {#if !widget}
     <aside class="sidebar">
       <a class="brand" href="#history" onclick={() => navigate('history')}
-        ><span class="brand-icon">▤</span> Clipia<span class="version">v{version}</span></a
+        ><span class="brand-icon">▤</span>
+        <span class="brand-name"><span>Clipboard</span><span>Manager</span></span><span
+          class="version">v{version}</span
+        ></a
       >
       <div class="sidebar-caption">TU ESPACIO DE TEXTO</div>
       <nav aria-label="Principal">
@@ -451,7 +457,7 @@
   <main>
     <header class="page-header">
       <div>
-        <div class="eyebrow">{widget ? 'CLIPIA' : 'PORTAPAPELES + IA LOCAL'}</div>
+        <div class="eyebrow">{widget ? 'CLIPBOARD MANAGER' : 'PORTAPAPELES + IA LOCAL'}</div>
         <h1>
           {page === 'history'
             ? 'Tu portapapeles'
@@ -486,6 +492,14 @@
               run(async () => {
                 await invoke('open_manager');
               })}>↗</button
+          ><button
+            class="icon"
+            title="Cerrar widget"
+            aria-label="Cerrar widget"
+            onclick={() =>
+              run(async () => {
+                await invoke('hide_widget');
+              })}>×</button
           >
         </div>
       {:else if page === 'history'}<button
@@ -891,7 +905,7 @@
           >
           <label class="checkbox-label"
             ><input type="checkbox" bind:checked={draft.notifications} />Notificar al terminar
-            cuando Clipia esté en segundo plano</label
+            cuando Clipboard Manager esté en segundo plano</label
           >
         </section>
         <section class="settings-section">

@@ -510,8 +510,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "clipia"
-version = "0.2.2"
+name = "clipboard-manager"
+version = "0.2.4"
 dependencies = [
  "base64 0.22.1",
  "image",
@@ -519,7 +519,9 @@ dependencies = [
  "minisign-verify",
  "regex",
  "reqwest 0.12.28",
+ "reqwest 0.13.5",
  "rusqlite",
+ "rustls",
  "serde",
  "serde_json",
  "sha2",
@@ -533,6 +535,7 @@ dependencies = [
  "tauri-plugin-updater",
  "tokio",
  "windows 0.61.3",
+ "windows-registry",
 ]
 
 [[package]]

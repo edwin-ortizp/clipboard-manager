@@ -1,16 +1,18 @@
-# Distribuir y actualizar Clipia
+# Distribuir y actualizar Clipboard Manager
 
-## Canal preparado
+## Canal de actualizaciones
 
-El actualizador consulta `https://github.com/edwin-ortizp/clipia-releases/releases/latest/download/latest.json` al pulsar **Buscar actualizaciones**. No se creó ese repositorio ni se publicó una release durante esta implementación. Hasta publicar los archivos, la consulta mostrará que no puede contactar el canal.
+El actualizador consulta `https://github.com/edwin-ortizp/clipboard-manager/releases/latest/download/latest.json` al pulsar **Buscar actualizaciones**. Se completó la release pública v0.2.3 añadiendo únicamente el manifiesto faltante, después de descargar y verificar el instalador y su firma. Ambos archivos, la etiqueta y las notas existentes permanecen intactos.
 
-El repositorio propuesto es público y se destina exclusivamente a instaladores y metadatos. Publicar allí los paquetes no requiere publicar este código fuente ni el historial del usuario. La creación del repositorio y la publicación requieren una instrucción explícita adicional.
+El instalador de esa release se llama `Clipboard.Manager_0.2.3_x64-setup.exe`; su manifiesto utiliza exactamente ese nombre. La aplicación 0.2.3 ya pudo consultar el canal y mostrar «Tienes la última versión» en una instancia aislada. La 0.2.4 se prepara localmente y no se publica en esta entrega.
 
-## Primera actualización desde 0.1
+## Transición inicial a 0.2.3
 
-La versión 0.1 no contiene el actualizador. Instala una vez `Clipia_0.2.2_x64-setup.exe` sobre la instalación existente, sin desinstalar ni borrar los datos. El identificador y la carpeta de datos se mantienen. La primera apertura respalda la base antigua con un nombre `clipia-before-v2-<fecha>.sqlite3`, migra las entradas y conserva ajustes, prompts y trabajos. La clave de IA continúa en el almacén de credenciales de Windows.
+Instala manualmente `Clipboard-Manager_0.2.3_x64-setup.exe` sobre la instalación existente. La versión 0.2.2 consulta el repositorio anterior y no puede descubrir este cambio. No desinstales ni borres los datos. Las siguientes actualizaciones usarán el canal corregido cuando se publiquen instalador, firma y manifiesto.
 
-Después de instalar 0.2, las siguientes versiones publicadas se podrán descargar desde Ajustes con **Actualizar y reiniciar**. No hace falta desinstalar ni configurar de nuevo la aplicación. El actualizador de Windows muestra el progreso de instalación.
+El instalador mantiene internamente la clave de desinstalación `Clipia` y la ubicación existente, actualizando su nombre visible y ejecutable. Retira accesos directos antiguos únicamente cuando apuntan a esta instalación y migra el inicio con Windows, conservando su estado. Si detecta otra instalación o accesos nuevos ajenos, se detiene sin eliminarlos.
+
+Se mantienen `local.clipia.desktop`, `clipia.sqlite3`, los archivos de imágenes, las credenciales y la clave de firma. Son identificadores de compatibilidad. El cambio de nombre no requiere migrar el esquema ni restablecer preferencias, proveedor, prompts o ruta TSV.
 
 ## Claves de firma
 
@@ -36,8 +38,10 @@ npm run release:prepare
 
 El comando compila y firma. Deja en `artifacts/release/<versión>/` el instalador `.exe`, su `.sig`, `latest.json` sin BOM y `sha256.json`. Falla si las versiones no coinciden o falta la firma. No sube archivos a Internet. Con un build ya comprobado se puede utilizar `powershell -File scripts/release.ps1 -SkipBuild`.
 
+Publica los tres archivos desde esa carpeta: instalador, firma y `latest.json`. No subas directamente los archivos de `target/release/bundle/nsis`: sus nombres contienen espacios, que GitHub puede convertir en puntos. El preparador utiliza guiones para mantener nombres y URLs estables. No renombres los archivos después de generar el manifiesto.
+
 4. Comprueba la firma y el rechazo de modificaciones con el ejemplo de verificación. Desde PowerShell se puede usar `& ./scripts/native.ps1 -NativeArgs @('run','--example','verify-update','--','<instalador>','<firma>','src-tauri/tauri.conf.json')`. El comando verifica el paquete real y rechaza una copia alterada y otra truncada.
-5. Tras autorizar la publicación, crea una release estable con etiqueta `v<versión>` en `edwin-ortizp/clipia-releases`. Adjunta el `.exe`, `.sig` y `latest.json` de la misma compilación. No modifiques un paquete después de firmarlo.
+5. Tras autorizar la publicación, crea una release estable con etiqueta `v<versión>` en `edwin-ortizp/clipboard-manager`. Adjunta el `.exe`, `.sig` y `latest.json` de la misma compilación. No modifiques un paquete después de firmarlo.
 
 GitHub debe marcar la versión estable como la última release para que funcione el endpoint `/releases/latest/download/latest.json`. Las URLs del manifiesto apuntan al instalador de su etiqueta concreta.
 

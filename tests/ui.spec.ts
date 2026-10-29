@@ -1,5 +1,74 @@
 import { test, expect } from '@playwright/test';
 
+test('marca Clipboard Manager compacta y sin nombre anterior', async ({ page }) => {
+  await page.setViewportSize({ width: 760, height: 600 });
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await expect(page).toHaveTitle('Clipboard Manager · Portapapeles');
+  await expect(page.locator('.brand-name')).toHaveText('ClipboardManager');
+  await expect(page.locator('.brand-name > span')).toHaveCount(2);
+  expect(await page.locator('.brand').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(
+    true,
+  );
+  await expect(page.locator('body')).not.toContainText(/clipia/i);
+  await page.screenshot({ path: 'artifacts/clipboard-manager-brand.png' });
+  await page.setViewportSize({ width: 380, height: 540 });
+  await page.goto('/?widget', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('body')).toContainText('CLIPBOARD MANAGER');
+  await expect(page.locator('body')).not.toContainText(/clipia/i);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`cerrar widget con ratón y teclado en tema ${colorScheme}`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.setViewportSize({ width: 380, height: 540 });
+    await page.goto('/?widget', { waitUntil: 'domcontentloaded' });
+    const close = page.getByRole('button', { name: 'Cerrar widget', exact: true });
+    await expect(close).toBeInViewport();
+    await expect(close).toHaveAttribute('title', 'Cerrar widget');
+    await close.click();
+    await expect.poll(() => page.evaluate(() => (window as any).__widgetClosed)).toBe(1);
+    await close.focus();
+    await expect(close).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect.poll(() => page.evaluate(() => (window as any).__widgetClosed)).toBe(2);
+    await page.keyboard.press('Escape');
+    await expect.poll(() => page.evaluate(() => (window as any).__widgetClosed)).toBe(3);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await page.screenshot({ path: `artifacts/widget-close-${colorScheme}.png` });
+  });
+}
+
+test('consulta fallida limpia novedades y permite reintentar sin estado de búsqueda atascado', async ({
+  page,
+}) => {
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await page.getByRole('button', { name: 'Ajustes', exact: false }).click();
+  await page.evaluate(() => {
+    (window as any).__updateReplies = [
+      { available: { version: '0.2.5', notes: 'Novedades de prueba' } },
+      {
+        error:
+          'El canal de actualizaciones no tiene un manifiesto disponible. Debe publicarse latest.json en GitHub Releases.',
+      },
+      { available: null },
+    ];
+  });
+  const search = page.getByRole('button', { name: 'Buscar actualizaciones' });
+  await search.click();
+  await expect(page.getByRole('button', { name: 'Actualizar y reiniciar' })).toBeVisible();
+  await search.click();
+  await expect(page.getByRole('status')).toContainText('latest.json');
+  await expect(page.getByRole('button', { name: 'Actualizar y reiniciar' })).toHaveCount(0);
+  await expect(page.locator('.release-notes')).toHaveCount(0);
+  await expect(page.getByText('Buscando actualizaciones…')).toHaveCount(0);
+  await expect(search).toBeEnabled();
+  await search.click();
+  await expect(page.getByRole('status')).toContainText('Tienes la última versión');
+});
+
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     const clips = [
@@ -126,7 +195,17 @@ test.beforeEach(async ({ page }) => {
               : 'No se encontraron cambios',
           };
         }
-        if (command === 'check_update') return { version: '0.2.1', notes: 'Mejoras de prueba' };
+        if (command === 'hide_widget') {
+          (window as any).__widgetClosed = ((window as any).__widgetClosed || 0) + 1;
+          return;
+        }
+        if (command === 'check_update') {
+          const replies = (window as any).__updateReplies;
+          const next = replies?.shift();
+          if (next?.error) throw next.error;
+          if (next) return next.available;
+          return { version: '0.2.5', notes: 'Mejoras de prueba' };
+        }
         if (command === 'update_clip') {
           if (args.action === 'favorite') {
             const c = clips.find((c) => c.id === args.id)!;
@@ -289,7 +368,7 @@ test('actualización disponible y bloqueo con cambios sin guardar', async ({ pag
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await page.getByRole('button', { name: 'Ajustes', exact: false }).click();
   await page.getByRole('button', { name: 'Buscar actualizaciones' }).click();
-  await expect(page.getByText('Versión 0.2.1 disponible')).toBeVisible();
+  await expect(page.getByText('Versión 0.2.5 disponible')).toBeVisible();
   await expect(page.getByText('Mejoras de prueba')).toBeVisible();
   await page.getByLabel('Entradas normales conservadas').fill('200');
   await page.getByRole('button', { name: 'Actualizar y reiniciar' }).click();

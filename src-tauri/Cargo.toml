@@ -1,6 +1,6 @@
 [package]
-name = "clipia"
-version = "0.2.2"
+name = "clipboard-manager"
+version = "0.2.4"
 edition = "2021"
 
 [build-dependencies]
@@ -15,6 +15,7 @@ tauri-plugin-updater = "2"
 tauri-plugin-notification = "2"
 tauri-plugin-dialog = "2"
 regex = "1"
+windows-registry = "0.6"
 image = { version = "0.25", default-features = false, features = ["png", "bmp"] }
 sha2 = "0.10"
 base64 = "0.22"
@@ -31,5 +32,7 @@ strip = true
 lto = "thin"
 
 [dev-dependencies]
+reqwest-updater = { package = "reqwest", version = "0.13", default-features = false }
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
 minisign-verify = "0.3"
 windows = { version = "0.61", features = ["Win32_System_StationsAndDesktops", "Win32_System_Threading", "Win32_Security"] }

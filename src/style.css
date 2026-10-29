@@ -149,6 +149,25 @@ kbd {
   place-items: center;
   font-size: 26px;
 }
+.brand {
+  padding: 0 4px;
+  gap: 8px;
+}
+.brand .brand-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+.brand-name {
+  display: flex;
+  flex-direction: column;
+  font-size: 16px;
+  line-height: 1.05;
+  letter-spacing: -0.3px;
+}
+.brand .version {
+  font-size: 9px;
+}
 .version {
   font-size: 10px;
   color: var(--muted);

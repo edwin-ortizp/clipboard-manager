@@ -54,7 +54,7 @@ pub fn finish(app: &tauri::AppHandle, state: &SharedState) {
             let _ = app
                 .notification()
                 .builder()
-                .title("Clipia · IA terminada")
+                .title("Clipboard Manager · IA terminada")
                 .body(&summary)
                 .show();
         }

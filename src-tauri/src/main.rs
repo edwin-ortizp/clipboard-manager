@@ -5,6 +5,7 @@ mod db;
 mod delivery;
 mod mappings;
 mod media;
+mod startup;
 mod updates;
 use db::{err, Prompt, Settings};
 use rusqlite::{params, Connection};
@@ -289,7 +290,7 @@ async fn save_settings(
         }
         if settings.autostart != old.autostart {
             if settings.autostart {
-                app.autolaunch().enable()
+                startup::enable(&app)
             } else {
                 app.autolaunch().disable()
             }
@@ -673,7 +674,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         })
         .is_err()
     {
-        *state.startup_error.lock().unwrap() = Some("No se pudo registrar el atajo. Cámbialo en Ajustes; puedes abrir Clipia desde la bandeja.".into());
+        *state.startup_error.lock().unwrap() = Some("No se pudo registrar el atajo. Cámbialo en Ajustes; puedes abrir Clipboard Manager desde la bandeja.".into());
     }
     if !args.iter().any(|s| s == "--no-capture") {
         let handle = app.handle().clone();
@@ -707,7 +708,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
             &tauri::menu::MenuItem::with_id(
                 app,
                 "manager",
-                "Administrar Clipia",
+                "Administrar Clipboard Manager",
                 true,
                 None::<&str>,
             )?,
@@ -725,7 +726,7 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         tauri::image::Image::new_owned(include_bytes!("../icons/tray.rgba").to_vec(), 32, 32);
     tauri::tray::TrayIconBuilder::new()
         .icon(icon)
-        .tooltip("Clipia · Portapapeles con IA")
+        .tooltip("Clipboard Manager · Portapapeles con IA")
         .menu(&menu)
         .on_menu_event(|app, event| match event.id.as_ref() {
             "widget" => request_widget(app),
@@ -774,6 +775,7 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_autostart::Builder::new()
+                .app_name("Clipboard Manager")
                 .args(["--background"])
                 .build(),
         )
@@ -824,7 +826,7 @@ fn main() {
             _ => {}
         })
         .build(context)
-        .expect("No se pudo iniciar Clipia");
+        .expect("No se pudo iniciar Clipboard Manager");
     app.run(|_, event| {
         if let tauri::RunEvent::ExitRequested {
             code: None, api, ..

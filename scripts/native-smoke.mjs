@@ -70,7 +70,7 @@ async function until(fn, description, timeout = 20000) {
 }
 async function launch() {
   child = spawn(
-    resolve('src-tauri/target/release/clipia.exe'),
+    resolve('src-tauri/target/release/clipboard-manager.exe'),
     ['--data-dir', data, '--no-capture'],
     {
       cwd: root,
@@ -315,7 +315,23 @@ c=sqlite3.connect(p/'clipia.sqlite3');c.execute("INSERT INTO clips(text,kind,wid
     metrics.widgetOpenMs = Math.round(performance.now() - widgetStart);
     await widget.screenshot({ path: resolve('artifacts/native-widget.png') });
   }
-  await widget.evaluate(() => window.__TAURI_INTERNALS__.invoke('hide_widget')).catch(() => {});
+  await widget.getByRole('button', { name: 'Cerrar widget', exact: true }).click();
+  await until(() => widget.isClosed(), 'close button destroys the widget');
+  assert.equal(child.exitCode, null, 'close button must keep the application running');
+  assert.equal((await snapshot()).settings.paused, false, 'capture preference must stay enabled');
+  await call('toggle_widget');
+  const reopened = await until(
+    async () =>
+      browser
+        .contexts()
+        .flatMap((c) => c.pages())
+        .find((p) => p.url().includes('?widget')),
+    'reopened widget',
+  );
+  await reopened.getByRole('button', { name: 'Cerrar widget', exact: true }).waitFor();
+  await reopened.keyboard.press('Escape');
+  await until(() => reopened.isClosed(), 'Escape closes reopened widget');
+  metrics.widgetCloseAndReopen = 'passed';
   const processMetrics = () =>
     JSON.parse(
       execFileSync(

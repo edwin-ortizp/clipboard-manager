@@ -1,4 +1,4 @@
-# Clipia
+# Clipboard Manager
 
 Gestor de portapapeles para Windows 11 con historial de texto e imágenes y acciones de IA mediante un servidor compatible con OpenAI. Tauri 2 + Rust + Svelte 5 + SQLite.
 
@@ -6,19 +6,19 @@ Consulta [VALIDACION.md](VALIDACION.md) para los resultados, mediciones y compro
 
 ## Usar la aplicación
 
-1. Ejecuta el instalador de `src-tauri/target/release/bundle/nsis/` o el ejecutable `src-tauri/target/release/clipia.exe`.
-2. Copia texto o imágenes en cualquier aplicación. Clipia guarda el historial mientras está ejecutándose, aunque cierres sus ventanas.
+1. Ejecuta el instalador de `artifacts/release/<versión>/` o el ejecutable `src-tauri/target/release/clipboard-manager.exe`.
+2. Copia texto o imágenes en cualquier aplicación. Clipboard Manager guarda el historial mientras está ejecutándose, aunque cierres sus ventanas.
 3. Abre el widget con **Ctrl+Alt+V** o desde el icono en la bandeja. El atajo puede cambiarse en Ajustes. Win+V sigue abriendo el historial de Windows.
 4. Selecciona uno o varios textos y elige un prompt. Puedes procesarlos por separado o unirlos, ajustando previamente su orden.
 5. Los resultados aparecen automáticamente en el historial, marcados como IA. Al terminar un lote se copia el último resultado correcto, siempre que no hayas copiado otra cosa durante la espera. La cola conserva los originales y todos los resultados para su revisión.
 
 Los favoritos no cuentan para el límite de 1000 entradas normales, compartido por textos e imágenes. Puedes cambiar ese límite, pausar la captura y limpiar las entradas normales. Las imágenes permiten vista ampliada, copia, favoritos y eliminación, sin acciones de IA. La limpieza del historial no elimina los originales ni los resultados conservados en los trabajos de IA.
 
-**Cerrar** oculta la ventana. Para terminar la aplicación y la captura, usa **Salir** en el menú del icono de la bandeja. El inicio con Windows está desactivado por defecto.
+La **×** del widget o **Escape** cierran su ventana sin detener la captura ni la cola. Puedes reabrirlo con el atajo o desde la bandeja. Para terminar la aplicación y la captura, usa **Salir** en el menú del icono de la bandeja. El inicio con Windows está desactivado por defecto.
 
 ## Diccionario de equivalencias
 
-En **Ajustes → Diccionario de equivalencias**, selecciona un archivo `.tsv`, compruébalo y guarda los ajustes. El archivo permanece en la ruta elegida y Clipia lo lee sin modificarlo; usa una ubicación permanente, no una carpeta temporal de cargas. Una ruta vacía desconfigura el diccionario.
+En **Ajustes → Diccionario de equivalencias**, selecciona un archivo `.tsv`, compruébalo y guarda los ajustes. El archivo permanece en la ruta elegida y Clipboard Manager lo lee sin modificarlo; usa una ubicación permanente, no una carpeta temporal de cargas. Una ruta vacía desconfigura el diccionario.
 
 Cada regla usa cuatro columnas separadas por tabuladores: `origen`, `reemplazo`, `word|any`, `case|nocase`. Se admite UTF-8 con o sin BOM, comentarios iniciados por `#` y líneas vacías. Origen y destino no pueden estar vacíos. Las filas inválidas, modos desconocidos y orígenes duplicados o incompatibles muestran su número de línea.
 
@@ -34,7 +34,7 @@ Los resultados generados llevan un chip **IA**. **Ver cambios** compara el origi
 
 La versión 0.2 incorpora **Ajustes → Actualizaciones**. La 0.1 requiere una actualización manual inicial. El canal de GitHub está preparado y pendiente de publicación autorizada; consulta [RELEASES.md](RELEASES.md). Las actualizaciones mantienen los datos y verifican la firma del instalador.
 
-Los resultados se guardan aunque pauses la captura. Con Clipia en primer plano verás un aviso y el resumen en el historial; en segundo plano se intenta mostrar una notificación de Windows. Puedes desactivar copia automática y notificaciones desde Ajustes. Si el portapapeles cambió mientras trabajaba la IA, se conserva tu copia más reciente y el resultado queda disponible en el historial. Un lote entrega una única notificación final.
+Los resultados se guardan aunque pauses la captura. Con Clipboard Manager en primer plano verás un aviso y el resumen en el historial; en segundo plano se intenta mostrar una notificación de Windows. Puedes desactivar copia automática y notificaciones desde Ajustes. Si el portapapeles cambió mientras trabajaba la IA, se conserva tu copia más reciente y el resultado queda disponible en el historial. Un lote entrega una única notificación final.
 
 La tipografía Nunito y su licencia se incluyen localmente; la interfaz funciona sin descargar fuentes.
 
@@ -49,7 +49,7 @@ Instala y ejecuta tu servidor de modelos por separado. En Ajustes configura:
 | Modelo               | El identificador del modelo cargado en tu servidor                      |
 | Clave API            | Opcional, según el servidor                                             |
 
-Las direcciones son ejemplos: utiliza la URL que muestre tu servidor. Clipia añade `/models` o `/chat/completions` a la URL base; no añade `/v1` por su cuenta. El servidor debe aceptar `messages` y devolver texto en `choices[0].message.content`. No se requiere streaming.
+Las direcciones son ejemplos: utiliza la URL que muestre tu servidor. Clipboard Manager añade `/models` o `/chat/completions` a la URL base; no añade `/v1` por su cuenta. El servidor debe aceptar `messages` y devolver texto en `choices[0].message.content`. No se requiere streaming.
 
 Guarda los ajustes y usa **Consultar modelos** si el servidor ofrece `/models`; también puedes escribir el identificador manualmente. **Probar conexión y generación** realiza una petición breve de prueba al modelo, por lo que comprueba más que la disponibilidad del endpoint. Ambas acciones utilizan la clave ya guardada, no una clave todavía sin guardar.
 
@@ -69,7 +69,7 @@ La biblioteca permite crear, editar y eliminar prompts, establecer su orden y ma
 - No hay cuentas, sincronización, telemetría propia ni envío automático a IA. El destino de red es el proveedor configurado; una URL remota enviará allí el texto seleccionado.
 - No se escriben contenidos ni claves en logs. Los errores HTTP muestran el estado, sin incluir el cuerpo potencialmente sensible del servidor.
 - Se respetan `ExcludeClipboardContentFromMonitorProcessing` y `CanIncludeInClipboardHistory=0`. Esto no identifica todas las contraseñas: si una aplicación copia texto sin estas marcas, puede entrar en el historial. Puedes pausar la captura desde la bandeja.
-- Se capturan texto plano e imágenes desde que Clipia está activo. No se importa el historial previo de Windows, ni archivos o formato enriquecido. Las imágenes se conservan como PNG y no se envían al modelo.
+- Se capturan texto plano e imágenes desde que Clipboard Manager está activo. No se importa el historial previo de Windows, ni archivos o formato enriquecido. Las imágenes se conservan como PNG y no se envían al modelo.
 
 ## Desarrollo
 
@@ -100,7 +100,7 @@ El empaquetado produce un instalador NSIS para el usuario actual. Los paquetes d
 
 ### Ejecución aislada para pruebas
 
-El ejecutable acepta `--data-dir <carpeta>` para usar otra base de datos y `--no-capture` para desactivar la integración del portapapeles durante pruebas. `--background` evita mostrar la ventana de administración al iniciar. Solo se permite una instancia normal de Clipia por sesión. Combinar `--data-dir` y `--no-capture` crea una identidad de pruebas separada, sin leer la clave real del proveedor.
+El ejecutable acepta `--data-dir <carpeta>` para usar otra base de datos y `--no-capture` para desactivar la integración del portapapeles durante pruebas. `--background` evita mostrar la ventana de administración al iniciar. Solo se permite una instancia normal de Clipboard Manager por sesión. Combinar `--data-dir` y `--no-capture` crea una identidad de pruebas separada, sin leer la clave real del proveedor.
 
 ## Arquitectura
 
