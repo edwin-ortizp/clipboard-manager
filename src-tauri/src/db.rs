@@ -8,6 +8,7 @@ pub struct Settings {
     pub model: String,
     pub limit: i64,
     pub shortcut: String,
+    pub win_v: bool,
     pub paused: bool,
     pub autostart: bool,
     pub auto_copy: bool,
@@ -21,6 +22,7 @@ impl Default for Settings {
             model: String::new(),
             limit: 1000,
             shortcut: "Ctrl+Alt+V".into(),
+            win_v: false,
             paused: false,
             autostart: false,
             auto_copy: true,
@@ -319,6 +321,7 @@ mod tests {
         let s = settings(&c);
         assert_eq!(s.model, "custom");
         assert_eq!(s.limit, 321);
+        assert!(!s.win_v);
         assert!(s.auto_copy && s.notifications && s.paused);
         let clip = &clips(&c, "", false, 0).unwrap()[0];
         assert_eq!(clip.id, 42);
@@ -328,6 +331,31 @@ mod tests {
         assert_eq!(text(&c, 42).unwrap(), "Árbol legado");
         init(&c).unwrap();
         assert_eq!(clips(&c, "", false, 0).unwrap().len(), 1);
+    }
+    #[test]
+    fn win_v_defaults_off_and_survives_database_reopen() {
+        let path = std::env::temp_dir().join(format!(
+            "clipboard-win-v-{}-{}.sqlite3",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        {
+            let mut c = Connection::open(&path).unwrap();
+            init(&c).unwrap();
+            let mut s = settings(&c);
+            assert!(!s.win_v);
+            s.win_v = true;
+            crate::persist_settings(&mut c, &s).unwrap();
+        }
+        {
+            let c = Connection::open(&path).unwrap();
+            init(&c).unwrap();
+            assert!(settings(&c).win_v);
+        }
+        std::fs::remove_file(path).unwrap();
     }
     #[test]
     fn ai_result_is_saved_when_capture_paused() {

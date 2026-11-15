@@ -19,6 +19,7 @@
     model: '',
     limit: 1000,
     shortcut: 'Ctrl+Alt+V',
+    win_v: false,
     paused: false,
     autostart: false,
     auto_copy: true,
@@ -30,6 +31,7 @@
     model: '',
     limit: 1000,
     shortcut: 'Ctrl+Alt+V',
+    win_v: false,
     paused: false,
     autostart: false,
     auto_copy: true,
@@ -841,9 +843,17 @@
               >Atajo del widget<input bind:value={draft.shortcut} placeholder="Ctrl+Alt+V" /></label
             >
           </div>
+          <small>Los favoritos nunca se eliminan por el límite.</small>
+          <label class="checkbox-label"
+            ><input type="checkbox" bind:checked={draft.win_v} />Usar Win+V para abrir el widget</label
+          >
           <small
-            >Los favoritos nunca se eliminan por el límite. Win+V sigue perteneciendo a Windows.</small
-          ><label class="checkbox-label"
+            >Se aplica al guardar, sin reiniciar. Al desactivarlo o salir de la aplicación, Win+V
+            vuelve a abrir el panel de Windows. El atajo configurado sigue funcionando. Con una
+            ventana de administrador activa, Win+V abre el panel de Windows salvo que Clipboard
+            Manager también se ejecute como administrador.</small
+          >
+          <label class="checkbox-label"
             ><input type="checkbox" bind:checked={draft.autostart} />Iniciar con Windows en segundo
             plano</label
           ><label class="checkbox-label"

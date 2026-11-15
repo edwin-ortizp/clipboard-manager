@@ -7,6 +7,7 @@ mod mappings;
 mod media;
 mod startup;
 mod updates;
+mod winv;
 use db::{err, Prompt, Settings};
 use rusqlite::{params, Connection};
 use serde::Serialize;
@@ -26,6 +27,7 @@ struct Shared {
     startup_error: Mutex<Option<String>>,
     media_dir: std::path::PathBuf,
     updating: AtomicBool,
+    win_v: winv::Controller,
 }
 type SharedState = Arc<Shared>;
 fn changed(app: &tauri::AppHandle) {
@@ -274,32 +276,33 @@ async fn save_settings(
             })
             .map_err(|_| "El atajo está ocupado o no se puede registrar")?;
     }
-    let result = (|| -> Result<(), String> {
-        if let Some(key) = key {
-            let entry = ai::credential()?;
-            if key.is_empty() {
-                match entry.delete_credential() {
-                    Ok(()) | Err(keyring::Error::NoEntry) => (),
-                    Err(_) => return Err("No se pudo eliminar la clave".into()),
+    let result = state
+        .win_v
+        .save(&app, settings.win_v, || -> Result<(), String> {
+            if let Some(key) = key {
+                let entry = ai::credential()?;
+                if key.is_empty() {
+                    match entry.delete_credential() {
+                        Ok(()) | Err(keyring::Error::NoEntry) => (),
+                        Err(_) => return Err("No se pudo eliminar la clave".into()),
+                    }
+                } else {
+                    entry
+                        .set_password(&key)
+                        .map_err(|_| "No se pudo guardar la clave")?
                 }
-            } else {
-                entry
-                    .set_password(&key)
-                    .map_err(|_| "No se pudo guardar la clave")?
             }
-        }
-        if settings.autostart != old.autostart {
-            if settings.autostart {
-                startup::enable(&app)
-            } else {
-                app.autolaunch().disable()
+            if settings.autostart != old.autostart {
+                if settings.autostart {
+                    startup::enable(&app)
+                } else {
+                    app.autolaunch().disable()
+                }
+                .map_err(err)?;
             }
-            .map_err(err)?;
-        }
-        let c = state.db.lock().map_err(err)?;
-        db::save_settings(&c, &settings)?;
-        media::cleanup(&c, &state.media_dir)
-    })();
+            let mut c = state.db.lock().map_err(err)?;
+            persist_settings(&mut c, &settings)
+        });
     if result.is_err() {
         if old.shortcut != settings.shortcut {
             let _ = app.global_shortcut().unregister(shortcut);
@@ -311,7 +314,14 @@ async fn save_settings(
     }
     *state.startup_error.lock().map_err(err)? = None;
     changed(&app);
-    Ok(())
+    // Cleanup runs after commit: never roll back references to files already removed.
+    let c = state.db.lock().map_err(err)?;
+    media::cleanup(&c, &state.media_dir)
+}
+fn persist_settings(c: &mut Connection, settings: &Settings) -> Result<(), String> {
+    let transaction = c.transaction().map_err(err)?;
+    db::save_settings(&transaction, settings)?;
+    transaction.commit().map_err(err)
 }
 #[tauri::command]
 async fn check_mappings(path: String) -> Result<mappings::Status, String> {
@@ -663,8 +673,14 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         startup_error: Mutex::new(None),
         media_dir: dir.join("media"),
         updating: AtomicBool::new(false),
+        win_v: winv::Controller::default(),
     });
     app.manage(state.clone());
+    if let Err(error) = state.win_v.set_enabled(app.handle(), settings.win_v) {
+        *state.startup_error.lock().unwrap() = Some(format!(
+            "No se pudo activar Win+V: {error}. El atajo configurado sigue disponible."
+        ));
+    }
     if app
         .global_shortcut()
         .on_shortcut(settings.shortcut.as_str(), |app, _, event| {
@@ -674,7 +690,12 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         })
         .is_err()
     {
-        *state.startup_error.lock().unwrap() = Some("No se pudo registrar el atajo. Cámbialo en Ajustes; puedes abrir Clipboard Manager desde la bandeja.".into());
+        let mut error = state.startup_error.lock().unwrap();
+        let shortcut_error = "No se pudo registrar el atajo. Cámbialo en Ajustes; puedes abrir Clipboard Manager desde la bandeja.";
+        *error = Some(match error.take() {
+            Some(previous) => format!("{previous} {shortcut_error}"),
+            None => shortcut_error.into(),
+        });
     }
     if !args.iter().any(|s| s == "--no-capture") {
         let handle = app.handle().clone();
@@ -827,7 +848,10 @@ fn main() {
         })
         .build(context)
         .expect("No se pudo iniciar Clipboard Manager");
-    app.run(|_, event| {
+    app.run(|app, event| {
+        if matches!(event, tauri::RunEvent::Exit) {
+            let _ = app.state::<SharedState>().win_v.set_enabled(app, false);
+        }
         if let tauri::RunEvent::ExitRequested {
             code: None, api, ..
         } = event

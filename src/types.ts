@@ -20,6 +20,7 @@ export interface Settings {
   model: string;
   limit: number;
   shortcut: string;
+  win_v: boolean;
   paused: boolean;
   autostart: boolean;
   auto_copy: boolean;

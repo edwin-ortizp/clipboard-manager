@@ -121,6 +121,7 @@ test.beforeEach(async ({ page }) => {
         model: 'local',
         limit: 1000,
         shortcut: 'Ctrl+Alt+V',
+        win_v: false,
         paused: false,
         autostart: false,
         auto_copy: true,
@@ -304,6 +305,50 @@ test('administración de prompts y configuración', async ({ page }) => {
   await page.getByRole('button', { name: 'Guardar ajustes' }).click();
   await expect(page.getByRole('status')).toContainText('Ajustes guardados');
 });
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`Win+V opcional: guardar, descartar y teclado en tema ${colorScheme}`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.setViewportSize({ width: 760, height: 600 });
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: 'Ajustes', exact: false }).click();
+    const checkbox = page.getByRole('checkbox', { name: 'Usar Win+V para abrir el widget' });
+    const savedWinV = () =>
+      page.evaluate(
+        async () => (await (window as any).__TAURI_INTERNALS__.invoke('snapshot')).settings.win_v,
+      );
+    await expect(checkbox).not.toBeChecked();
+    await checkbox.check();
+    expect(await savedWinV()).toBe(false);
+    await page.getByRole('button', { name: 'Descartar cambios' }).click();
+    await expect(checkbox).not.toBeChecked();
+    await checkbox.check();
+    await page.getByRole('button', { name: 'Guardar ajustes' }).click();
+    await expect(page.getByRole('status')).toContainText('Ajustes guardados');
+    expect(await savedWinV()).toBe(true);
+    // Other settings writes must preserve the preference too.
+    await page.locator('.brand').click();
+    await page.getByRole('button', { name: 'Pausar captura', exact: false }).click();
+    await expect(
+      page.getByRole('button', { name: 'Reanudar captura', exact: false }),
+    ).toBeVisible();
+    expect(await savedWinV()).toBe(true);
+    await page.getByRole('button', { name: 'Ajustes', exact: false }).click();
+    await expect(checkbox).toBeChecked();
+    await expect(page.getByLabel('Atajo del widget')).toHaveValue('Ctrl+Alt+V');
+    await expect(page.getByText(/Con una\s+ventana de administrador activa/)).toBeVisible();
+    await checkbox.focus();
+    await page.keyboard.press('Space');
+    await expect(checkbox).not.toBeChecked();
+    await page.getByRole('button', { name: 'Guardar ajustes' }).click();
+    await expect.poll(savedWinV).toBe(false);
+    await checkbox.scrollIntoViewIfNeeded();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await page.screenshot({ path: `artifacts/winv-settings-${colorScheme}.png` });
+  });
+}
 
 test('widget 380×540: teclado, selección y unión sin desbordamiento', async ({ page }) => {
   await page.setViewportSize({ width: 380, height: 540 });
